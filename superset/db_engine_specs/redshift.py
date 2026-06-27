@@ -360,5 +360,10 @@ class RedshiftEngineSpec(BasicParametersMixin, PostgresBaseEngineSpec):
             )
             cursor.close()
         except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Failed to cancel Redshift query with PID %s",
+                cancel_query_id,
+                exc_info=True,
+            )
             return False
         return True

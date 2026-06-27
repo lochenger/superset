@@ -237,6 +237,9 @@ class ImpalaEngineSpec(BaseEngineSpec):
             # request to an internal target, bypassing the is_safe_host check.
             response = requests.post(url, timeout=3, allow_redirects=False)
         except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Failed to cancel Impala query %s", cancel_query_id, exc_info=True
+            )
             return False
 
         return bool(response and response.status_code == 200)

@@ -160,11 +160,12 @@ def _parse_partial_config(
     try:
         return config_class.model_validate(config)
     except (PydanticValidationError, ValueError):
-        pass
+        logger.debug("Strict validation failed, trying partial", exc_info=True)
 
     try:
         return config_class.model_validate(config, context={"partial": True})
     except (PydanticValidationError, ValueError):
+        logger.debug("Partial validation also failed", exc_info=True)
         return None
 
 

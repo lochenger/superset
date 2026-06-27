@@ -211,6 +211,7 @@ class ExtraCache:
                 self.cache_key_wrapper(json.dumps(user_roles))
             return user_roles
         except Exception:  # pylint: disable=broad-except
+            logger.warning("Failed to get user roles", exc_info=True)
             return None
 
     def current_user_rls_rules(self) -> list[str] | None:

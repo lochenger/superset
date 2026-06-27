@@ -465,6 +465,11 @@ class MySQLEngineSpec(BasicParametersMixin, BaseEngineSpec):
         try:
             cursor.execute(f"KILL CONNECTION {cancel_query_id}")
         except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Failed to cancel query with connection ID %s",
+                cancel_query_id,
+                exc_info=True,
+            )
             return False
 
         return True
