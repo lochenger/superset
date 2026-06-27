@@ -18,9 +18,6 @@ import logging
 from functools import partial
 from typing import Optional
 
-from flask_babel import lazy_gettext as _
-
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.chart.exceptions import (
     ChartDeleteFailedError,
@@ -28,9 +25,9 @@ from superset.commands.chart.exceptions import (
     ChartForbiddenError,
     ChartNotFoundError,
 )
+from superset.commands.utils import check_associated_reports, validate_ownership_many
 from superset.daos.chart import ChartDAO
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.models.slice import Slice
 from superset.utils.decorators import on_error, transaction
 
@@ -54,17 +51,9 @@ class DeleteChartCommand(BaseCommand):
         if not self._models or len(self._models) != len(self._model_ids):
             raise ChartNotFoundError()
         # Check there are no associated ReportSchedules
-        if reports := ReportScheduleDAO.find_by_chart_ids(self._model_ids):
-            report_names = [report.name for report in reports]
-            raise ChartDeleteFailedReportsExistError(
-                _(
-                    "There are associated alerts or reports: %(report_names)s",
-                    report_names=",".join(report_names),
-                )
-            )
+        check_associated_reports(
+            ReportScheduleDAO.find_by_chart_ids(self._model_ids),
+            ChartDeleteFailedReportsExistError,
+        )
         # Check ownership
-        for model in self._models:
-            try:
-                security_manager.raise_for_ownership(model)
-            except SupersetSecurityException as ex:
-                raise ChartForbiddenError() from ex
+        validate_ownership_many(self._models, ChartForbiddenError)

@@ -18,15 +18,14 @@ import logging
 from functools import partial
 from typing import Optional
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.report.exceptions import (
     ReportScheduleDeleteFailedError,
     ReportScheduleForbiddenError,
     ReportScheduleNotFoundError,
 )
+from superset.commands.utils import validate_ownership_many
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.reports.models import ReportSchedule
 from superset.utils.decorators import on_error, transaction
 
@@ -51,8 +50,4 @@ class DeleteReportScheduleCommand(BaseCommand):
             raise ReportScheduleNotFoundError()
 
         # Check ownership
-        for model in self._models:
-            try:
-                security_manager.raise_for_ownership(model)
-            except SupersetSecurityException as ex:
-                raise ReportScheduleForbiddenError() from ex
+        validate_ownership_many(self._models, ReportScheduleForbiddenError)

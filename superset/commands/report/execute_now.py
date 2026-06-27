@@ -22,7 +22,6 @@ from uuid import uuid4
 from flask import current_app
 from kombu.exceptions import OperationalError as KombuOperationalError
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.exceptions import CommandException
 from superset.commands.report.exceptions import (
@@ -31,8 +30,8 @@ from superset.commands.report.exceptions import (
     ReportScheduleForbiddenError,
     ReportScheduleNotFoundError,
 )
+from superset.commands.utils import validate_ownership
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.reports.models import ReportSchedule
 
 logger = logging.getLogger(__name__)
@@ -128,7 +127,4 @@ class ExecuteReportScheduleNowCommand(BaseCommand):
         if not self._model:
             raise ReportScheduleNotFoundError()
 
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise ReportScheduleForbiddenError() from ex
+        validate_ownership(self._model, ReportScheduleForbiddenError)

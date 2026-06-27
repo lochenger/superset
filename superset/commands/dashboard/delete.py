@@ -18,9 +18,6 @@ import logging
 from functools import partial
 from typing import Optional
 
-from flask_babel import lazy_gettext as _
-
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.dashboard.exceptions import (
     DashboardDeleteEmbeddedFailedError,
@@ -29,9 +26,13 @@ from superset.commands.dashboard.exceptions import (
     DashboardForbiddenError,
     DashboardNotFoundError,
 )
+from superset.commands.utils import (
+    check_associated_reports,
+    validate_ownership,
+    validate_ownership_many,
+)
 from superset.daos.dashboard import DashboardDAO, EmbeddedDashboardDAO
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.models.dashboard import Dashboard
 from superset.utils.decorators import on_error, transaction
 
@@ -48,10 +49,7 @@ class DeleteEmbeddedDashboardCommand(BaseCommand):
         return EmbeddedDashboardDAO.delete(self._dashboard.embedded)
 
     def validate(self) -> None:
-        try:
-            security_manager.raise_for_ownership(self._dashboard)
-        except SupersetSecurityException as ex:
-            raise DashboardForbiddenError() from ex
+        validate_ownership(self._dashboard, DashboardForbiddenError)
 
 
 class DeleteDashboardCommand(BaseCommand):
@@ -71,17 +69,9 @@ class DeleteDashboardCommand(BaseCommand):
         if not self._models or len(self._models) != len(self._model_ids):
             raise DashboardNotFoundError()
         # Check there are no associated ReportSchedules
-        if reports := ReportScheduleDAO.find_by_dashboard_ids(self._model_ids):
-            report_names = [report.name for report in reports]
-            raise DashboardDeleteFailedReportsExistError(
-                _(
-                    "There are associated alerts or reports: %(report_names)s",
-                    report_names=",".join(report_names),
-                )
-            )
+        check_associated_reports(
+            ReportScheduleDAO.find_by_dashboard_ids(self._model_ids),
+            DashboardDeleteFailedReportsExistError,
+        )
         # Check ownership
-        for model in self._models:
-            try:
-                security_manager.raise_for_ownership(model)
-            except SupersetSecurityException as ex:
-                raise DashboardForbiddenError() from ex
+        validate_ownership_many(self._models, DashboardForbiddenError)

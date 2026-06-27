@@ -34,7 +34,12 @@ from superset.commands.chart.exceptions import (
     DashboardsNotFoundValidationError,
     DatasourceTypeUpdateRequiredValidationError,
 )
-from superset.commands.utils import get_datasource_by_id, update_tags, validate_tags
+from superset.commands.utils import (
+    get_datasource_by_id,
+    update_tags,
+    validate_ownership,
+    validate_tags,
+)
 from superset.daos.chart import ChartDAO
 from superset.daos.dashboard import DashboardDAO
 from superset.exceptions import SupersetSecurityException
@@ -128,15 +133,13 @@ class UpdateChartCommand(UpdateMixin, BaseCommand):
         # (raise_for_access permits admins, owners, and users with access to the
         # chart's datasource).
         if not is_query_context_update(self._properties):
+            validate_ownership(self._model, ChartForbiddenError)
             try:
-                security_manager.raise_for_ownership(self._model)
                 owners = self.compute_owners(
                     self._model.owners,
                     owner_ids,
                 )
                 self._properties["owners"] = owners
-            except SupersetSecurityException as ex:
-                raise ChartForbiddenError() from ex
             except ValidationError as ex:
                 exceptions.append(ex)
         else:

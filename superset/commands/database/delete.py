@@ -18,8 +18,6 @@ import logging
 from functools import partial
 from typing import Optional
 
-from flask_babel import lazy_gettext as _
-
 from superset.commands.base import BaseCommand
 from superset.commands.database.exceptions import (
     DatabaseDeleteDatasetsExistFailedError,
@@ -27,6 +25,7 @@ from superset.commands.database.exceptions import (
     DatabaseDeleteFailedReportsExistError,
     DatabaseNotFoundError,
 )
+from superset.commands.utils import check_associated_reports
 from superset.daos.database import DatabaseDAO
 from superset.daos.report import ReportScheduleDAO
 from superset.models.core import Database
@@ -52,15 +51,10 @@ class DeleteDatabaseCommand(BaseCommand):
         if not self._model:
             raise DatabaseNotFoundError()
         # Check there are no associated ReportSchedules
-
-        if reports := ReportScheduleDAO.find_by_database_id(self._model_id):
-            report_names = [report.name for report in reports]
-            raise DatabaseDeleteFailedReportsExistError(
-                _(
-                    "There are associated alerts or reports: %(report_names)s",
-                    report_names=",".join(report_names),
-                )
-            )
+        check_associated_reports(
+            ReportScheduleDAO.find_by_database_id(self._model_id),
+            DatabaseDeleteFailedReportsExistError,
+        )
         # Check if there are datasets for this database
         if self._model.tables:
             raise DatabaseDeleteDatasetsExistFailedError()

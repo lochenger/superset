@@ -21,7 +21,6 @@ from typing import Any, Optional
 from flask_appbuilder.models.sqla import Model
 from marshmallow import ValidationError
 
-from superset import security_manager
 from superset.commands.base import UpdateMixin
 from superset.commands.report.base import BaseReportScheduleCommand
 from superset.commands.report.exceptions import (
@@ -35,9 +34,9 @@ from superset.commands.report.exceptions import (
     ReportScheduleUpdateFailedError,
     ReportScheduleUserEmailNotFoundError,
 )
+from superset.commands.utils import validate_ownership
 from superset.daos.database import DatabaseDAO
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.reports.models import (
     ReportCreationMethod,
     ReportRecipientType,
@@ -167,10 +166,7 @@ class UpdateReportScheduleCommand(UpdateMixin, BaseReportScheduleCommand):
             )
 
         # Check ownership
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise ReportScheduleForbiddenError() from ex
+        validate_ownership(self._model, ReportScheduleForbiddenError)
 
         # Validate/Populate owner
         try:

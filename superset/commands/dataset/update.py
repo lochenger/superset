@@ -44,6 +44,7 @@ from superset.commands.dataset.exceptions import (
     DatasetUpdateFailedError,
     MultiCatalogDisabledValidationError,
 )
+from superset.commands.utils import validate_ownership
 from superset.connectors.sqla.models import SqlaTable, validate_stored_expression
 from superset.daos.dataset import DatasetDAO
 from superset.datasets.schemas import FolderSchema
@@ -105,10 +106,7 @@ class UpdateDatasetCommand(UpdateMixin, BaseCommand):
             raise DatasetNotFoundError()
 
         # Check permission to update the dataset
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise DatasetForbiddenError() from ex
+        validate_ownership(self._model, DatasetForbiddenError)
 
         # Validate/Populate owner
         try:
