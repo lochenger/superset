@@ -24,14 +24,13 @@ from uuid import UUID
 
 from superset_core.tasks.types import TaskProperties
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.tasks.exceptions import (
     TaskForbiddenError,
     TaskNotFoundError,
     TaskUpdateFailedError,
 )
-from superset.exceptions import SupersetSecurityException
+from superset.commands.utils import validate_ownership
 from superset.tasks.locks import task_lock
 from superset.tasks.utils import get_active_dedup_key
 from superset.utils.decorators import on_error, transaction
@@ -143,10 +142,7 @@ class UpdateTaskCommand(BaseCommand):
         # Verify ownership (user can only update their own tasks)
         # Skip this check for internal updates (e.g., task executor updating progress)
         if not self._skip_security_check:
-            try:
-                security_manager.raise_for_ownership(self._model)
-            except SupersetSecurityException as ex:
-                raise TaskForbiddenError() from ex
+            validate_ownership(self._model, TaskForbiddenError)
 
         # Update status via set_status() for proper timestamp handling
         if self._status is not None:

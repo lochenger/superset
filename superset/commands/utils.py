@@ -17,10 +17,12 @@
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Iterable
 from typing import Any, Optional, TYPE_CHECKING
 
 from flask import current_app, g
 from flask_appbuilder.security.sqla.models import Role, User
+from flask_babel import lazy_gettext as _
 
 from superset import security_manager
 from superset.commands.exceptions import (
@@ -33,12 +35,16 @@ from superset.commands.exceptions import (
 from superset.daos.datasource import DatasourceDAO
 from superset.daos.exceptions import DatasourceNotFound
 from superset.daos.tag import TagDAO
+from superset.exceptions import SupersetSecurityException
 from superset.tags.models import ObjectType, Tag, TagType
 from superset.utils import json
 from superset.utils.core import DatasourceType, get_user_id
 
 if TYPE_CHECKING:
+    from flask_appbuilder import Model
+
     from superset.connectors.sqla.models import BaseDatasource
+    from superset.reports.models import ReportSchedule
 
 
 def populate_owner_list(
@@ -229,3 +235,53 @@ def update_chart_config_dataset(
             config["query_context"] = None
 
     return config
+
+
+def validate_ownership(
+    model: "Model",
+    forbidden_exc: type[Exception],
+) -> None:
+    """Check that the caller owns *model*, raising *forbidden_exc* otherwise.
+
+    Centralises the recurring ``try … raise_for_ownership … except``
+    pattern used across many command ``validate()`` methods.
+
+    :param model: any SQLAlchemy model that supports ownership checks
+    :param forbidden_exc: exception class to raise on denied access
+    """
+    try:
+        security_manager.raise_for_ownership(model)
+    except SupersetSecurityException as ex:
+        raise forbidden_exc() from ex
+
+
+def validate_ownership_many(
+    models: Iterable["Model"],
+    forbidden_exc: type[Exception],
+) -> None:
+    """Run :func:`validate_ownership` on each item in *models*."""
+    for model in models:
+        validate_ownership(model, forbidden_exc)
+
+
+def check_associated_reports(
+    reports: list["ReportSchedule"],
+    reports_exist_exc: type[Exception],
+) -> None:
+    """Raise *reports_exist_exc* when *reports* is non-empty.
+
+    Replaces the identical report-association guard in chart, dashboard
+    and database delete commands.
+
+    :param reports: list of associated :class:`ReportSchedule` rows
+    :param reports_exist_exc: exception class whose constructor accepts
+        a translated message string
+    """
+    if reports:
+        report_names = [report.name for report in reports]
+        raise reports_exist_exc(
+            _(
+                "There are associated alerts or reports: %(report_names)s",
+                report_names=",".join(report_names),
+            )
+        )

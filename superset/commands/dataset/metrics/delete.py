@@ -18,16 +18,15 @@ import logging
 from functools import partial
 from typing import Optional
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.dataset.metrics.exceptions import (
     DatasetMetricDeleteFailedError,
     DatasetMetricForbiddenError,
     DatasetMetricNotFoundError,
 )
+from superset.commands.utils import validate_ownership
 from superset.connectors.sqla.models import SqlMetric
 from superset.daos.dataset import DatasetDAO, DatasetMetricDAO
-from superset.exceptions import SupersetSecurityException
 from superset.utils.decorators import on_error, transaction
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,4 @@ class DeleteDatasetMetricCommand(BaseCommand):
         if not self._model:
             raise DatasetMetricNotFoundError()
         # Check ownership
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise DatasetMetricForbiddenError() from ex
+        validate_ownership(self._model, DatasetMetricForbiddenError)

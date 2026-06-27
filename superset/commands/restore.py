@@ -19,9 +19,8 @@
 from functools import partial
 from typing import Any, ClassVar, Generic, TypeVar
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
-from superset.exceptions import SupersetSecurityException
+from superset.commands.utils import validate_ownership
 from superset.models.helpers import SoftDeleteMixin
 from superset.utils.decorators import on_error, transaction
 
@@ -91,8 +90,5 @@ class BaseRestoreCommand(BaseCommand, Generic[T]):
                 f"Row with uuid={self._model_uuid!r} is not soft-deleted; "
                 "nothing to restore"
             )
-        try:
-            security_manager.raise_for_ownership(model)
-        except SupersetSecurityException as ex:
-            raise self.forbidden_exc() from ex
+        validate_ownership(model, self.forbidden_exc)
         return model

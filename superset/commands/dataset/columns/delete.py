@@ -18,16 +18,15 @@ import logging
 from functools import partial
 from typing import Optional
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.dataset.columns.exceptions import (
     DatasetColumnDeleteFailedError,
     DatasetColumnForbiddenError,
     DatasetColumnNotFoundError,
 )
+from superset.commands.utils import validate_ownership
 from superset.connectors.sqla.models import TableColumn
 from superset.daos.dataset import DatasetColumnDAO, DatasetDAO
-from superset.exceptions import SupersetSecurityException
 from superset.utils.decorators import on_error, transaction
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,4 @@ class DeleteDatasetColumnCommand(BaseCommand):
         if not self._model:
             raise DatasetColumnNotFoundError()
         # Check ownership
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise DatasetColumnForbiddenError() from ex
+        validate_ownership(self._model, DatasetColumnForbiddenError)

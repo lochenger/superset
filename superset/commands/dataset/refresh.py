@@ -21,17 +21,16 @@ from typing import Optional
 from flask import current_app
 from flask_appbuilder.models.sqla import Model
 
-from superset import security_manager
 from superset.commands.base import BaseCommand
 from superset.commands.dataset.exceptions import (
     DatasetForbiddenError,
     DatasetNotFoundError,
     DatasetRefreshFailedError,
 )
+from superset.commands.utils import validate_ownership
 from superset.connectors.sqla.models import SqlaTable
 from superset.daos.dataset import DatasetDAO
 from superset.datasets.datetime_format_detector import DatetimeFormatDetector
-from superset.exceptions import SupersetSecurityException
 from superset.utils.decorators import on_error, transaction
 
 logger = logging.getLogger(__name__)
@@ -71,7 +70,4 @@ class RefreshDatasetCommand(BaseCommand):
         if not self._model:
             raise DatasetNotFoundError()
         # Check ownership
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise DatasetForbiddenError() from ex
+        validate_ownership(self._model, DatasetForbiddenError)

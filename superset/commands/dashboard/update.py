@@ -23,7 +23,7 @@ from flask import current_app
 from flask_appbuilder.models.sqla import Model
 from marshmallow import ValidationError
 
-from superset import db, security_manager
+from superset import db
 from superset.commands.base import BaseCommand, UpdateMixin
 from superset.commands.dashboard.exceptions import (
     DashboardChartCustomizationsUpdateFailedError,
@@ -35,10 +35,14 @@ from superset.commands.dashboard.exceptions import (
     DashboardSlugExistsValidationError,
     DashboardUpdateFailedError,
 )
-from superset.commands.utils import populate_roles, update_tags, validate_tags
+from superset.commands.utils import (
+    populate_roles,
+    update_tags,
+    validate_ownership,
+    validate_tags,
+)
 from superset.daos.dashboard import DashboardDAO
 from superset.daos.report import ReportScheduleDAO
-from superset.exceptions import SupersetSecurityException
 from superset.models.dashboard import Dashboard
 from superset.reports.models import ReportSchedule
 from superset.tags.models import ObjectType
@@ -90,10 +94,7 @@ class UpdateDashboardCommand(UpdateMixin, BaseCommand):
         if not self._model:
             raise DashboardNotFoundError()
         # Check ownership
-        try:
-            security_manager.raise_for_ownership(self._model)
-        except SupersetSecurityException as ex:
-            raise DashboardForbiddenError() from ex
+        validate_ownership(self._model, DashboardForbiddenError)
 
         # Validate slug uniqueness
         if not DashboardDAO.validate_update_slug_uniqueness(self._model_id, slug):
