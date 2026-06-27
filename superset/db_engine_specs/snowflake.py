@@ -342,6 +342,11 @@ class SnowflakeEngineSpec(PostgresBaseEngineSpec):
         try:
             cursor.execute(f"SELECT SYSTEM$CANCEL_ALL_QUERIES({cancel_query_id})")
         except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "Failed to cancel query for session %s",
+                cancel_query_id,
+                exc_info=True,
+            )
             return False
 
         return True

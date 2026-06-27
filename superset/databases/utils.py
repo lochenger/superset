@@ -17,12 +17,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, TYPE_CHECKING
 
 from sqlalchemy.engine.url import make_url, URL
 
 from superset.commands.database.exceptions import DatabaseInvalidError
 from superset.sql.parse import Table
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from superset.databases.schemas import (
@@ -58,6 +61,11 @@ def get_col_type(col: dict[Any, Any]) -> str:
         dtype = f"{col['type']}"
     except Exception:  # pylint: disable=broad-except
         # sqla.types.JSON __str__ has a bug, so using __class__.
+        logger.debug(
+            "Failed to stringify column type %s, using class name",
+            type(col.get("type")),
+            exc_info=True,
+        )
         dtype = col["type"].__class__.__name__
     return dtype
 

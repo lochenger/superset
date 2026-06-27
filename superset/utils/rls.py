@@ -17,12 +17,15 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, TYPE_CHECKING
 
 from sqlalchemy import and_, or_
 
 from superset import db
 from superset.sql.parse import Table
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from superset.models.core import Database
@@ -181,6 +184,8 @@ def collect_rls_predicates_for_sql(
             }
         )
     except Exception:
-        # If we can't parse the SQL, return empty list
-        # This ensures RLS application failure doesn't break caching
+        logger.warning(
+            "Failed to extract RLS predicates from SQL; returning empty list",
+            exc_info=True,
+        )
         return []

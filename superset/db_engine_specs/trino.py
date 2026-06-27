@@ -491,6 +491,7 @@ class TrinoEngineSpec(PrestoBaseEngineSpec):
             )
             cursor.fetchall()  # needed to trigger the call
         except Exception:  # pylint: disable=broad-except
+            logger.warning("Failed to cancel query %s", cancel_query_id, exc_info=True)
             return False
 
         return True
