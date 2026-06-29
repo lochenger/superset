@@ -376,10 +376,11 @@ PROXY_FIX_CONFIG = {"x_for": 1, "x_proto": 1, "x_host": 1, "x_port": 1, "x_prefi
 # Configuration for scheduling queries from SQL Lab.
 SCHEDULED_QUERIES: dict[str, Any] = {}
 
-# FAB Rate limiting: this is a security feature for preventing DDOS attacks. The
-# feature is on by default to make Superset secure by default, but you should
-# fine tune the limits to your needs. You can read more about the different
-# parameters here: https://flask-limiter.readthedocs.io/en/stable/configuration.html
+# FAB Rate limiting: this is a security feature for preventing DDOS attacks.
+# It is enabled when SUPERSET_ENV is set to "production". For non-production
+# deployments, override this in superset_config.py if rate limiting is desired.
+# You can read more about the different parameters here:
+# https://flask-limiter.readthedocs.io/en/stable/configuration.html
 RATELIMIT_ENABLED = os.environ.get("SUPERSET_ENV") == "production"
 RATELIMIT_APPLICATION = "50 per second"
 AUTH_RATE_LIMITED = True
@@ -1302,13 +1303,12 @@ STORE_CACHE_KEYS_IN_METADATA_DB = False
 # CORS Options
 # NOTE: enabling this requires installing the cors-related python dependencies
 # `pip install .[cors]` or `pip install apache_superset[cors]`, depending
-ENABLE_CORS = True
-CORS_OPTIONS: dict[Any, Any] = {
-    "origins": [
-        "https://tile.openstreetmap.org",
-        "https://tile.osm.ch",
-    ]
-}
+# on your installation method. When ENABLE_CORS is True, configure
+# CORS_OPTIONS to restrict allowed origins (see Flask-CORS documentation).
+# If you use deck.gl map tiles, add the tile-server origins here, e.g.:
+#   CORS_OPTIONS = {"origins": ["https://tile.openstreetmap.org", ...]}
+ENABLE_CORS = False
+CORS_OPTIONS: dict[Any, Any] = {}
 
 # Sanitizes the HTML content used in markdowns to allow its rendering in a safe manner.
 # Disabling this option is not recommended for security reasons. If you wish to allow
