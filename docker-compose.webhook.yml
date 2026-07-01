@@ -1,0 +1,15 @@
+services:
+  webhook:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    ports:
+      - "3000:3000"
+    environment:
+      # Set these in your shell before running: export DEVIN_API_KEY=... GITHUB_TOKEN=...
+      - DEVIN_API_KEY=${DEVIN_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-superset-webhook-secret}
+    volumes:
+      # Persist sessions.json outside the container so data survives restarts
+      - ./sessions.json:/app/sessions.json
