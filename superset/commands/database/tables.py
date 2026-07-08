@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any, cast
 
+from flask import current_app as app
 from sqlalchemy.orm import lazyload, load_only
 
 from superset.commands.base import BaseCommand
@@ -163,9 +164,13 @@ class TablesDatabaseCommand(BaseCommand):
                 key=lambda item: item["value"],
             )
 
+            # ``count`` reflects the full total so the client can detect when the
+            # returned ``result`` has been truncated (count > len(result)) and warn
+            # the user instead of silently hiding tables.
+            max_tables = app.config["DATABASE_TABLES_MAX"]
             payload = {
                 "count": len(tables) + len(views) + len(materialized_views),
-                "result": options,
+                "result": options[:max_tables],
             }
             return payload
         except SupersetException:
