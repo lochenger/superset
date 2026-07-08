@@ -307,11 +307,19 @@ const TableSelector: FunctionComponent<TableSelectorProps> = ({
 
     const label = t('Table');
 
+    const helperText = data?.hasMore
+      ? t(
+          'Showing first %s tables. Type to search for tables not listed here.',
+          tableOptions.length,
+        )
+      : undefined;
+
     const select = (
       <Select
         ariaLabel={t('Select table or type to search tables')}
         disabled={disabled}
         filterOption={handleFilterOption}
+        helperText={helperText}
         labelInValue
         loading={loadingTables}
         name="select-table"

@@ -306,6 +306,61 @@ test('calls onTableSelectChange for schema-less database without schema', async 
   );
 }, 15000);
 
+test('shows a truncation notice when the table list has more results', async () => {
+  fetchMock.get(catalogApiRoute, { result: [] });
+  fetchMock.get(schemaApiRoute, { result: ['test_schema'] });
+  fetchMock.get(tablesApiRoute, {
+    count: 120,
+    result: [
+      { label: 'table_a', value: 'table_a' },
+      { label: 'table_b', value: 'table_b' },
+    ],
+  } as any);
+
+  const props = createProps();
+  render(<TableSelector {...props} />, { useRedux: true, store });
+
+  const tableSelect = screen.getByRole('combobox', {
+    name: 'Select table or type to search tables',
+  });
+
+  await act(async () => {
+    await userEvent.click(tableSelect);
+  });
+
+  await waitFor(
+    () => {
+      expect(screen.getByText(/Showing first 2 tables/i)).toBeInTheDocument();
+    },
+    { timeout: 10000 },
+  );
+}, 15000);
+
+test('does not show a truncation notice when all tables are returned', async () => {
+  fetchMock.get(catalogApiRoute, { result: [] });
+  fetchMock.get(schemaApiRoute, { result: ['test_schema'] });
+  fetchMock.get(tablesApiRoute, getTableMockFunction());
+
+  const props = createProps();
+  render(<TableSelector {...props} />, { useRedux: true, store });
+
+  const tableSelect = screen.getByRole('combobox', {
+    name: 'Select table or type to search tables',
+  });
+
+  await act(async () => {
+    await userEvent.click(tableSelect);
+  });
+
+  await waitFor(
+    () => {
+      expect(screen.getByText('table_a')).toBeInTheDocument();
+    },
+    { timeout: 10000 },
+  );
+  expect(screen.queryByText(/Showing first/i)).not.toBeInTheDocument();
+}, 15000);
+
 test('TableOption renders correct icons for different table types', () => {
   // Test regular table
   const tableTable = {
