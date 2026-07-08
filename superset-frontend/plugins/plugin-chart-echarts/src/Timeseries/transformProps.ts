@@ -909,13 +909,17 @@ export default function transformProps(
         triggerEvent: true,
       }),
     axisLabel: {
-      // When rotation is applied on time axes, hideOverlap can
-      // aggressively hide the last label. Rotated labels already
+      // "All" (interval 0) must force every label to render, so
+      // hideOverlap is disabled and overlap is managed via rotation.
+      // Otherwise: when rotation is applied on time axes, hideOverlap
+      // can aggressively hide the last label. Rotated labels already
       // have less overlap, so disabling hideOverlap is safe.
       // At 0° rotation, keep hideOverlap to prevent long labels
       // from overlapping each other, with showMaxLabel to ensure
       // the last data point label stays visible (#37181).
-      hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
+      hideOverlap:
+        axisLabelInterval !== 0 &&
+        !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
       formatter: deduplicatedFormatter,
       rotate: xAxisLabelRotation,
       interval: axisLabelInterval,

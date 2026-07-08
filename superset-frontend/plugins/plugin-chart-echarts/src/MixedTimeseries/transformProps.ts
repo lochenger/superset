@@ -709,7 +709,11 @@ export default function transformProps(
       nameGap: convertInteger(xAxisTitleMargin),
       nameLocation: 'middle',
       axisLabel: {
-        hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
+        // "All" (interval 0) must force every label to render, so
+        // hideOverlap is disabled and overlap is managed via rotation.
+        hideOverlap:
+          axisLabelInterval !== 0 &&
+          !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
         formatter: deduplicatedFormatter,
         rotate: xAxisLabelRotation,
         interval: axisLabelInterval,

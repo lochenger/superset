@@ -1643,11 +1643,13 @@ test('X-Axis Label Interval "All" falls back to Category axis on a temporal x-ax
   const { echartOptions } = transformProps(chartProps);
   const xAxis = echartOptions.xAxis as {
     type: string;
-    axisLabel: { interval: number | string };
+    axisLabel: { interval: number | string; hideOverlap: boolean };
   };
 
   expect(xAxis.type).toBe(AxisType.Category);
   expect(xAxis.axisLabel.interval).toBe(0);
+  // "All" must force every label to render, so overlap-hiding is disabled.
+  expect(xAxis.axisLabel.hideOverlap).toBe(false);
 });
 
 test('X-Axis Label Interval "Auto" keeps the Time axis on a temporal x-axis', () => {
