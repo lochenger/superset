@@ -21,6 +21,8 @@ under the License.
 >
 > This fork adds an **autonomous issue-remediation pipeline** powered by the [Devin API](https://docs.devin.ai): when a GitHub issue is opened, a webhook programmatically starts a Devin session that investigates, fixes, and opens a PR — the only human touchpoint is code review. Includes a live status dashboard, metrics endpoint, and a leadership impact report.
 >
+> **→ 🎥 [5-minute walkthrough video (Loom)](https://www.loom.com/share/3e56b5040c9347949981d38d4084451d)**
+>
 > **→ Setup, architecture, and run instructions: [DEVIN_AUTOMATION.md](DEVIN_AUTOMATION.md)**
 >
 > Quick start: `docker compose -f docker-compose.webhook.yml up --build` · [Remediated issues](https://github.com/lochenger/superset/issues?q=is%3Aissue) · [Devin's PRs](https://github.com/lochenger/superset/pulls?q=is%3Apr)

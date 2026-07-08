@@ -1,5 +1,7 @@
 # Devin Automation — Event-Driven Security Remediation
 
+**🎥 [Watch the 5-minute walkthrough (Loom)](https://www.loom.com/share/3e56b5040c9347949981d38d4084451d)**
+
 Automatically remediates GitHub issues using the Devin API. When an issue is opened, a Devin session starts, investigates the problem, and opens a pull request with the fix — no human intervention required until PR review.
 
 ## How It Works
