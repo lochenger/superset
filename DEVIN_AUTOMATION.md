@@ -28,7 +28,7 @@ Engineer reviews and merges
 | `Dockerfile.webhook` | Packages the server into a container |
 | `docker-compose.webhook.yml` | One-command startup with environment variable passthrough |
 | `requirements.webhook.txt` | Python dependencies (Flask, requests) |
-| `sessions.json` | Auto-created — persists session state across restarts |
+| `sessions.json` | Session state, persisted across restarts. Committed with seed data from real remediation runs so the dashboard and report are populated on first boot |
 
 ## Quick Start
 
@@ -49,7 +49,10 @@ export GITHUB_TOKEN="ghp_..."
 docker compose -f docker-compose.webhook.yml up --build
 ```
 
-Server starts on port 3000. View the status dashboard at: http://localhost:3000/status
+Server starts on port 3000 (seeded with real session history, so there's data to look at immediately):
+- **Status dashboard:** http://localhost:3000/status
+- **Impact report (leadership view):** http://localhost:3000/report — engineer-hours saved, resolution rate, time-to-PR, live activity feed
+- **Metrics:** http://localhost:3000/metrics · **Health:** http://localhost:3000/health
 
 ### 3. Expose it to the internet
 ```bash
