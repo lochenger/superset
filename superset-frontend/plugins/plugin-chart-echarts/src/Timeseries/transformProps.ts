@@ -100,6 +100,7 @@ import {
 import { convertInteger } from '../utils/convertInteger';
 import { defaultGrid, defaultYAxis } from '../defaults';
 import {
+  getAxisLabelInterval,
   getBaselineSeriesForStream,
   getPadding,
   transformEventAnnotation,
@@ -912,7 +913,7 @@ export default function transformProps(
       hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
       formatter: deduplicatedFormatter,
       rotate: xAxisLabelRotation,
-      interval: xAxisLabelInterval,
+      interval: getAxisLabelInterval(xAxisLabelInterval),
       // Force last label on non-rotated time axes to prevent
       // hideOverlap from hiding it. Skipped when rotated to
       // avoid phantom labels at the axis boundary.

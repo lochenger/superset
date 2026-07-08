@@ -31,6 +31,7 @@ import {
   transformSeries,
   transformNegativeLabelsPosition,
   getPadding,
+  getAxisLabelInterval,
 } from '../../src/Timeseries/transformers';
 import transformProps from '../../src/Timeseries/transformProps';
 import { EchartsTimeseriesChartProps } from '../../src/types';
@@ -532,4 +533,27 @@ test('getPadding should handle Left position with zero margin correctly', () => 
   } finally {
     getChartPaddingSpy.mockRestore();
   }
+});
+
+test('getAxisLabelInterval maps "All" (0) to the numeric 0 ECharts expects', () => {
+  // The control emits '0' as a string for "All"; ECharts ignores the string
+  // and only honors the number 0 to show every label.
+  expect(getAxisLabelInterval('0')).toBe(0);
+  expect(getAxisLabelInterval(0)).toBe(0);
+});
+
+test('getAxisLabelInterval passes through "auto"', () => {
+  expect(getAxisLabelInterval('auto')).toBe('auto');
+});
+
+test('getAxisLabelInterval coerces positive numeric strings to numbers', () => {
+  expect(getAxisLabelInterval('2')).toBe(2);
+  expect(getAxisLabelInterval(3)).toBe(3);
+});
+
+test('getAxisLabelInterval falls back to "auto" for invalid values', () => {
+  expect(getAxisLabelInterval(undefined)).toBe('auto');
+  expect(getAxisLabelInterval(null)).toBe('auto');
+  expect(getAxisLabelInterval('nonsense')).toBe('auto');
+  expect(getAxisLabelInterval(-1)).toBe('auto');
 });

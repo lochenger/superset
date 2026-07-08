@@ -88,6 +88,7 @@ import {
 import { convertInteger } from '../utils/convertInteger';
 import { defaultGrid, defaultYAxis } from '../defaults';
 import {
+  getAxisLabelInterval,
   getPadding,
   transformEventAnnotation,
   transformFormulaAnnotation,
@@ -706,7 +707,7 @@ export default function transformProps(
         hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
         formatter: deduplicatedFormatter,
         rotate: xAxisLabelRotation,
-        interval: xAxisLabelInterval,
+        interval: getAxisLabelInterval(xAxisLabelInterval),
         ...(showMaxLabel && {
           showMaxLabel: true,
           alignMaxLabel: 'right',
