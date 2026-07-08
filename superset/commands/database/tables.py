@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any, cast
 
+from flask import current_app as app
 from sqlalchemy.orm import lazyload, load_only
 
 from superset.commands.base import BaseCommand
@@ -163,8 +164,17 @@ class TablesDatabaseCommand(BaseCommand):
                 key=lambda item: item["value"],
             )
 
+            # ``count`` reflects the true total number of tables/views so the
+            # frontend can detect truncation, while ``result`` may be capped to
+            # ``TABLE_NAMES_LIMIT`` to keep the payload manageable for schemas
+            # with a very large number of tables.
+            total = len(options)
+            limit = app.config["TABLE_NAMES_LIMIT"]
+            if limit is not None and total > limit:
+                options = options[:limit]
+
             payload = {
-                "count": len(tables) + len(views) + len(materialized_views),
+                "count": total,
                 "result": options,
             }
             return payload

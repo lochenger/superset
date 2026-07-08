@@ -220,6 +220,67 @@ def test_tables_without_schema_support(
     )
 
 
+def test_tables_truncates_and_reports_true_total(
+    mocker: MockerFixture,
+    database_without_catalog: MockerFixture,
+) -> None:
+    """
+    When a schema has more tables than ``TABLE_NAMES_LIMIT`` the result is
+    truncated while ``count`` still reports the true total, so the UI can
+    surface a truncation notice.
+    """
+    tables = {DatasourceName(f"table{i:03d}", "schema1") for i in range(250)}
+    mocker.patch.object(
+        security_manager,
+        "get_datasources_accessible_by_user",
+        side_effect=[tables, set(), set()],
+    )
+
+    db = mocker.patch("superset.commands.database.tables.db")
+    db.session.query().filter().options().all.return_value = []
+
+    mocker.patch.dict(
+        "superset.commands.database.tables.app.config",
+        {"TABLE_NAMES_LIMIT": 100},
+    )
+
+    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
+
+    assert payload["count"] == 250
+    assert len(payload["result"]) == 100
+    # options are sorted alphabetically, so the first N are returned
+    assert payload["result"][0]["value"] == "table000"
+    assert payload["result"][-1]["value"] == "table099"
+
+
+def test_tables_no_truncation_when_limit_is_none(
+    mocker: MockerFixture,
+    database_without_catalog: MockerFixture,
+) -> None:
+    """
+    A ``TABLE_NAMES_LIMIT`` of ``None`` returns every table.
+    """
+    tables = {DatasourceName(f"table{i:03d}", "schema1") for i in range(150)}
+    mocker.patch.object(
+        security_manager,
+        "get_datasources_accessible_by_user",
+        side_effect=[tables, set(), set()],
+    )
+
+    db = mocker.patch("superset.commands.database.tables.db")
+    db.session.query().filter().options().all.return_value = []
+
+    mocker.patch.dict(
+        "superset.commands.database.tables.app.config",
+        {"TABLE_NAMES_LIMIT": None},
+    )
+
+    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
+
+    assert payload["count"] == 150
+    assert len(payload["result"]) == 150
+
+
 def test_tables_without_catalog(
     mocker: MockerFixture,
     database_without_catalog: MockerFixture,

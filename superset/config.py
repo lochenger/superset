@@ -180,6 +180,13 @@ SAMPLES_ROW_LIMIT = 1000
 NATIVE_FILTER_DEFAULT_ROW_LIMIT = 1000
 # max rows retrieved by filter select auto complete
 FILTER_SELECT_ROW_LIMIT = 10000
+# Maximum number of tables/views returned by the database ``/tables/`` endpoint
+# that populates the table selector in SQL Lab and Explore. When a schema
+# contains more objects than this limit the result is truncated, while the
+# ``count`` field still reports the true total so the UI can surface a
+# "showing first N tables" notice and prompt the user to search for the rest.
+# Set to ``None`` to return every table (not recommended for large schemas).
+TABLE_NAMES_LIMIT: int | None = 100
 
 # Upper bound on the number of time-shift comparisons a single chart may request.
 # Each comparison spawns an additional query, so this caps the work amplification
