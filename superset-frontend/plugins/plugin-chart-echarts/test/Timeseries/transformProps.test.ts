@@ -1613,6 +1613,77 @@ test('temporal x coltype wires the time formatter and Time axis', () => {
   expect(label).not.toBe(String(ts1));
 });
 
+test('X-Axis Label Interval "All" falls back to Category axis on a temporal x-axis', () => {
+  // ECharts ignores axisLabel.interval on time axes, so "All" (interval 0)
+  // cannot force every label there. The transform falls back to a category
+  // axis (where interval 0 renders all labels) for a temporal x-axis.
+  const ts1 = 1745784000000;
+  const ts2 = 1745870400000;
+  const chartProps = createTestChartProps({
+    formData: {
+      metrics: ['metric'],
+      granularity_sqla: 'ds',
+      x_axis: '__timestamp',
+      xAxisLabelInterval: '0',
+    },
+    queriesData: [
+      createTestQueryData(
+        [
+          { __timestamp: ts1, metric: 10 },
+          { __timestamp: ts2, metric: 20 },
+        ],
+        {
+          colnames: ['__timestamp', 'metric'],
+          coltypes: [GenericDataType.Temporal, GenericDataType.Numeric],
+        },
+      ),
+    ],
+  });
+
+  const { echartOptions } = transformProps(chartProps);
+  const xAxis = echartOptions.xAxis as {
+    type: string;
+    axisLabel: { interval: number | string };
+  };
+
+  expect(xAxis.type).toBe(AxisType.Category);
+  expect(xAxis.axisLabel.interval).toBe(0);
+});
+
+test('X-Axis Label Interval "Auto" keeps the Time axis on a temporal x-axis', () => {
+  const ts1 = 1745784000000;
+  const ts2 = 1745870400000;
+  const chartProps = createTestChartProps({
+    formData: {
+      metrics: ['metric'],
+      granularity_sqla: 'ds',
+      x_axis: '__timestamp',
+      xAxisLabelInterval: 'auto',
+    },
+    queriesData: [
+      createTestQueryData(
+        [
+          { __timestamp: ts1, metric: 10 },
+          { __timestamp: ts2, metric: 20 },
+        ],
+        {
+          colnames: ['__timestamp', 'metric'],
+          coltypes: [GenericDataType.Temporal, GenericDataType.Numeric],
+        },
+      ),
+    ],
+  });
+
+  const { echartOptions } = transformProps(chartProps);
+  const xAxis = echartOptions.xAxis as {
+    type: string;
+    axisLabel: { interval: number | string };
+  };
+
+  expect(xAxis.type).toBe(AxisType.Time);
+  expect(xAxis.axisLabel.interval).toBe('auto');
+});
+
 test('should assign distinct dash patterns for multiple time offsets consistently', () => {
   const queriesDataWithMultipleOffsets = [
     createTestQueryData([

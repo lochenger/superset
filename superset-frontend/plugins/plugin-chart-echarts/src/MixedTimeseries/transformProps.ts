@@ -259,9 +259,14 @@ export default function transformProps(
 
   const dataTypes = getColtypesMapping(queriesData[0]);
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
+  const axisLabelInterval = getAxisLabelInterval(xAxisLabelInterval);
+  // ECharts only honors `axisLabel.interval` on category axes; on time axes it
+  // is ignored, so "All" (interval 0) cannot force every label on a temporal
+  // x-axis. Fall back to a categorical axis in that case so every label renders.
+  const forceCategorical = xAxisForceCategorical || axisLabelInterval === 0;
   const xAxisType = getAxisType(
     stack,
-    xAxisForceCategorical,
+    forceCategorical,
     xAxisDataType,
     seriesType === EchartsTimeseriesSeriesType.Bar ||
       seriesTypeB === EchartsTimeseriesSeriesType.Bar
@@ -707,7 +712,7 @@ export default function transformProps(
         hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
         formatter: deduplicatedFormatter,
         rotate: xAxisLabelRotation,
-        interval: getAxisLabelInterval(xAxisLabelInterval),
+        interval: axisLabelInterval,
         ...(showMaxLabel && {
           showMaxLabel: true,
           alignMaxLabel: 'right',
