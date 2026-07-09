@@ -18,6 +18,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from flask import current_app
 from pytest_mock import MockerFixture
 
 from superset.commands.database.tables import TablesDatabaseCommand
@@ -291,3 +292,39 @@ def test_tables_without_catalog(
         cache=database_without_catalog.table_cache_enabled,
         cache_timeout=database_without_catalog.table_cache_timeout,
     )
+
+
+def test_tables_truncated_to_max(
+    mocker: MockerFixture,
+    database_without_catalog: MockerFixture,
+) -> None:
+    """
+    Test that the result is truncated to DATABASE_TABLES_MAX while ``count``
+    still reflects the full total so the client can detect truncation.
+    """
+    mocker.patch.dict(current_app.config, {"DATABASE_TABLES_MAX": 2})
+
+    mocker.patch.object(
+        security_manager,
+        "get_datasources_accessible_by_user",
+        side_effect=[
+            {
+                DatasourceName("table1", "schema1"),
+                DatasourceName("table2", "schema1"),
+                DatasourceName("table3", "schema1"),
+            },
+            {DatasourceName("view1", "schema1")},
+            set(),  # Empty set for materialized views
+        ],
+    )
+
+    db = mocker.patch("superset.commands.database.tables.db")
+    db.session.query().filter().options().all.return_value = []
+
+    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
+
+    # count reflects the full total (3 tables + 1 view) ...
+    assert payload["count"] == 4
+    # ... while the result is capped at the configured maximum.
+    assert len(payload["result"]) == 2
+    assert payload["count"] > len(payload["result"])

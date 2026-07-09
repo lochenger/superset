@@ -196,6 +196,13 @@ DECK_MULTI_MAX_SLICES = 50
 # requested page size, to keep query result sets bounded.
 SQLALCHEMY_DAO_MAX_PAGE_SIZE = 1000
 
+# Maximum number of tables/views returned by the database tables endpoint
+# (GET /api/v1/database/<id>/tables/). Schemas with more objects than this limit
+# have their result truncated to keep the payload bounded. The response still
+# reports the full total via ``count`` so the table selector can surface a
+# "showing first N tables" notice instead of silently hiding the rest.
+DATABASE_TABLES_MAX = 1000
+
 # SupersetClient HTTP retry configuration
 # Controls retry behavior for all HTTP requests made through SupersetClient
 # This helps handle transient server errors (like 502 Bad Gateway) automatically
