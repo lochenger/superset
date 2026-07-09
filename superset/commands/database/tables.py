@@ -164,18 +164,13 @@ class TablesDatabaseCommand(BaseCommand):
                 key=lambda item: item["value"],
             )
 
-            # ``count`` reflects the true total number of tables/views so the
-            # frontend can detect truncation, while ``result`` may be capped to
-            # ``TABLE_NAMES_LIMIT`` to keep the payload manageable for schemas
-            # with a very large number of tables.
-            total = len(options)
-            limit = app.config["TABLE_NAMES_LIMIT"]
-            if limit is not None and total > limit:
-                options = options[:limit]
-
+            # ``count`` reflects the full total so the client can detect when the
+            # returned ``result`` has been truncated (count > len(result)) and warn
+            # the user instead of silently hiding tables.
+            max_tables = app.config["DATABASE_TABLES_MAX"]
             payload = {
-                "count": total,
-                "result": options,
+                "count": len(tables) + len(views) + len(materialized_views),
+                "result": options[:max_tables],
             }
             return payload
         except SupersetException:

@@ -88,6 +88,7 @@ import {
 import { convertInteger } from '../utils/convertInteger';
 import { defaultGrid, defaultYAxis } from '../defaults';
 import {
+  getAxisLabelInterval,
   getPadding,
   transformEventAnnotation,
   transformFormulaAnnotation,
@@ -258,9 +259,14 @@ export default function transformProps(
 
   const dataTypes = getColtypesMapping(queriesData[0]);
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
+  const axisLabelInterval = getAxisLabelInterval(xAxisLabelInterval);
+  // ECharts only honors `axisLabel.interval` on category axes; on time axes it
+  // is ignored, so "All" (interval 0) cannot force every label on a temporal
+  // x-axis. Fall back to a categorical axis in that case so every label renders.
+  const forceCategorical = xAxisForceCategorical || axisLabelInterval === 0;
   const xAxisType = getAxisType(
     stack,
-    xAxisForceCategorical,
+    forceCategorical,
     xAxisDataType,
     seriesType === EchartsTimeseriesSeriesType.Bar ||
       seriesTypeB === EchartsTimeseriesSeriesType.Bar
@@ -703,10 +709,14 @@ export default function transformProps(
       nameGap: convertInteger(xAxisTitleMargin),
       nameLocation: 'middle',
       axisLabel: {
-        hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
+        // "All" (interval 0) must force every label to render, so
+        // hideOverlap is disabled and overlap is managed via rotation.
+        hideOverlap:
+          axisLabelInterval !== 0 &&
+          !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
         formatter: deduplicatedFormatter,
         rotate: xAxisLabelRotation,
-        interval: xAxisLabelInterval,
+        interval: axisLabelInterval,
         ...(showMaxLabel && {
           showMaxLabel: true,
           alignMaxLabel: 'right',

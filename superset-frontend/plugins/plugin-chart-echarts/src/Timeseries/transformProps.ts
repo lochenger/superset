@@ -100,6 +100,7 @@ import {
 import { convertInteger } from '../utils/convertInteger';
 import { defaultGrid, defaultYAxis } from '../defaults';
 import {
+  getAxisLabelInterval,
   getBaselineSeriesForStream,
   getPadding,
   transformEventAnnotation,
@@ -314,9 +315,14 @@ export default function transformProps(
 
   const isMultiSeries = groupBy.length || metrics?.length > 1;
   const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
+  const axisLabelInterval = getAxisLabelInterval(xAxisLabelInterval);
+  // ECharts only honors `axisLabel.interval` on category axes; on time axes it
+  // is ignored, so "All" (interval 0) cannot force every label on a temporal
+  // x-axis. Fall back to a categorical axis in that case so every label renders.
+  const forceCategorical = xAxisForceCategorical || axisLabelInterval === 0;
   const xAxisType = getAxisType(
     stack,
-    xAxisForceCategorical,
+    forceCategorical,
     xAxisDataType,
     seriesType,
   );
@@ -903,16 +909,20 @@ export default function transformProps(
         triggerEvent: true,
       }),
     axisLabel: {
-      // When rotation is applied on time axes, hideOverlap can
-      // aggressively hide the last label. Rotated labels already
+      // "All" (interval 0) must force every label to render, so
+      // hideOverlap is disabled and overlap is managed via rotation.
+      // Otherwise: when rotation is applied on time axes, hideOverlap
+      // can aggressively hide the last label. Rotated labels already
       // have less overlap, so disabling hideOverlap is safe.
       // At 0° rotation, keep hideOverlap to prevent long labels
       // from overlapping each other, with showMaxLabel to ensure
       // the last data point label stays visible (#37181).
-      hideOverlap: !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
+      hideOverlap:
+        axisLabelInterval !== 0 &&
+        !(xAxisType === AxisType.Time && xAxisLabelRotation !== 0),
       formatter: deduplicatedFormatter,
       rotate: xAxisLabelRotation,
-      interval: xAxisLabelInterval,
+      interval: axisLabelInterval,
       // Force last label on non-rotated time axes to prevent
       // hideOverlap from hiding it. Skipped when rotated to
       // avoid phantom labels at the axis boundary.

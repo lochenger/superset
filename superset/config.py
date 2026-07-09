@@ -180,13 +180,6 @@ SAMPLES_ROW_LIMIT = 1000
 NATIVE_FILTER_DEFAULT_ROW_LIMIT = 1000
 # max rows retrieved by filter select auto complete
 FILTER_SELECT_ROW_LIMIT = 10000
-# Maximum number of tables/views returned by the database ``/tables/`` endpoint
-# that populates the table selector in SQL Lab and Explore. When a schema
-# contains more objects than this limit the result is truncated, while the
-# ``count`` field still reports the true total so the UI can surface a
-# "showing first N tables" notice and prompt the user to search for the rest.
-# Set to ``None`` to return every table (not recommended for large schemas).
-TABLE_NAMES_LIMIT: int | None = 100
 
 # Upper bound on the number of time-shift comparisons a single chart may request.
 # Each comparison spawns an additional query, so this caps the work amplification
@@ -202,6 +195,13 @@ DECK_MULTI_MAX_SLICES = 50
 # Caps how many rows a single paginated query can request, regardless of the
 # requested page size, to keep query result sets bounded.
 SQLALCHEMY_DAO_MAX_PAGE_SIZE = 1000
+
+# Maximum number of tables/views returned by the database tables endpoint
+# (GET /api/v1/database/<id>/tables/). Schemas with more objects than this limit
+# have their result truncated to keep the payload bounded. The response still
+# reports the full total via ``count`` so the table selector can surface a
+# "showing first N tables" notice instead of silently hiding the rest.
+DATABASE_TABLES_MAX = 1000
 
 # SupersetClient HTTP retry configuration
 # Controls retry behavior for all HTTP requests made through SupersetClient

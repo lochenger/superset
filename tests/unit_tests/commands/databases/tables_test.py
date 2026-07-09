@@ -18,6 +18,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from flask import current_app
 from pytest_mock import MockerFixture
 
 from superset.commands.database.tables import TablesDatabaseCommand
@@ -220,67 +221,6 @@ def test_tables_without_schema_support(
     )
 
 
-def test_tables_truncates_and_reports_true_total(
-    mocker: MockerFixture,
-    database_without_catalog: MockerFixture,
-) -> None:
-    """
-    When a schema has more tables than ``TABLE_NAMES_LIMIT`` the result is
-    truncated while ``count`` still reports the true total, so the UI can
-    surface a truncation notice.
-    """
-    tables = {DatasourceName(f"table{i:03d}", "schema1") for i in range(250)}
-    mocker.patch.object(
-        security_manager,
-        "get_datasources_accessible_by_user",
-        side_effect=[tables, set(), set()],
-    )
-
-    db = mocker.patch("superset.commands.database.tables.db")
-    db.session.query().filter().options().all.return_value = []
-
-    mocker.patch.dict(
-        "superset.commands.database.tables.app.config",
-        {"TABLE_NAMES_LIMIT": 100},
-    )
-
-    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
-
-    assert payload["count"] == 250
-    assert len(payload["result"]) == 100
-    # options are sorted alphabetically, so the first N are returned
-    assert payload["result"][0]["value"] == "table000"
-    assert payload["result"][-1]["value"] == "table099"
-
-
-def test_tables_no_truncation_when_limit_is_none(
-    mocker: MockerFixture,
-    database_without_catalog: MockerFixture,
-) -> None:
-    """
-    A ``TABLE_NAMES_LIMIT`` of ``None`` returns every table.
-    """
-    tables = {DatasourceName(f"table{i:03d}", "schema1") for i in range(150)}
-    mocker.patch.object(
-        security_manager,
-        "get_datasources_accessible_by_user",
-        side_effect=[tables, set(), set()],
-    )
-
-    db = mocker.patch("superset.commands.database.tables.db")
-    db.session.query().filter().options().all.return_value = []
-
-    mocker.patch.dict(
-        "superset.commands.database.tables.app.config",
-        {"TABLE_NAMES_LIMIT": None},
-    )
-
-    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
-
-    assert payload["count"] == 150
-    assert len(payload["result"]) == 150
-
-
 def test_tables_without_catalog(
     mocker: MockerFixture,
     database_without_catalog: MockerFixture,
@@ -352,3 +292,39 @@ def test_tables_without_catalog(
         cache=database_without_catalog.table_cache_enabled,
         cache_timeout=database_without_catalog.table_cache_timeout,
     )
+
+
+def test_tables_truncated_to_max(
+    mocker: MockerFixture,
+    database_without_catalog: MockerFixture,
+) -> None:
+    """
+    Test that the result is truncated to DATABASE_TABLES_MAX while ``count``
+    still reflects the full total so the client can detect truncation.
+    """
+    mocker.patch.dict(current_app.config, {"DATABASE_TABLES_MAX": 2})
+
+    mocker.patch.object(
+        security_manager,
+        "get_datasources_accessible_by_user",
+        side_effect=[
+            {
+                DatasourceName("table1", "schema1"),
+                DatasourceName("table2", "schema1"),
+                DatasourceName("table3", "schema1"),
+            },
+            {DatasourceName("view1", "schema1")},
+            set(),  # Empty set for materialized views
+        ],
+    )
+
+    db = mocker.patch("superset.commands.database.tables.db")
+    db.session.query().filter().options().all.return_value = []
+
+    payload = TablesDatabaseCommand(1, None, "schema1", False).run()
+
+    # count reflects the full total (3 tables + 1 view) ...
+    assert payload["count"] == 4
+    # ... while the result is capped at the configured maximum.
+    assert len(payload["result"]) == 2
+    assert payload["count"] > len(payload["result"])

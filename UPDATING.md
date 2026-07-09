@@ -26,7 +26,7 @@ assists people when migrating to a new version.
 
 ### Table selector list is capped and reports the true total
 
-The database `/api/v1/database/{id}/tables/` endpoint now caps the number of tables/views returned in `result` at `TABLE_NAMES_LIMIT` (default `100`), while the `count` field continues to report the true total. This lets the SQL Lab / Explore table selector detect truncation and surface a "showing first N tables" notice instead of silently omitting tables. Deployments with schemas that rely on receiving every table in a single response can restore the previous behavior by setting `TABLE_NAMES_LIMIT = None` in `superset_config.py`.
+The database `/api/v1/database/{id}/tables/` endpoint now caps the number of tables/views returned in `result` at `DATABASE_TABLES_MAX` (default `1000`), while the `count` field continues to report the full total. This lets the SQL Lab / Explore table selector detect truncation and surface a "showing first N tables" notice instead of silently omitting tables. Deployments with schemas larger than the default can raise `DATABASE_TABLES_MAX` in `superset_config.py`.
 
 ### Guest-token RLS rules reject unknown fields
 

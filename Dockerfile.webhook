@@ -1,0 +1,17 @@
+# Webhook server that listens for GitHub issue events and starts Devin sessions.
+# Kept separate from Superset's own Dockerfile (which builds the full app).
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies first so Docker caches this layer — rebuilds are faster
+# when only webhook_server.py changes
+COPY requirements.webhook.txt .
+RUN pip install --no-cache-dir -r requirements.webhook.txt
+
+COPY webhook_server.py .
+
+EXPOSE 3000
+
+CMD ["python", "webhook_server.py"]
