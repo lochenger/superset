@@ -768,3 +768,25 @@ export function getPadding(
     isHorizontal,
   );
 }
+
+/**
+ * Normalize the user-selected X-axis label interval into a value ECharts
+ * understands for `axisLabel.interval`.
+ *
+ * ECharts only honors a numeric interval (0 = show every label, n = show
+ * every (n + 1)th label) or the literal string 'auto'. Control values arrive
+ * as strings (e.g. '0' for "All"), and a string like '0' is silently ignored
+ * by ECharts, so the axis falls back to its default behavior and the setting
+ * appears to have no effect. Coerce numeric strings to numbers so that "All"
+ * maps to 0 and forces every label to render.
+ */
+export function getAxisLabelInterval(
+  interval: number | string | undefined | null,
+): number | 'auto' {
+  if (interval === undefined || interval === null || interval === 'auto') {
+    return 'auto';
+  }
+  const numeric =
+    typeof interval === 'number' ? interval : Number.parseInt(interval, 10);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : 'auto';
+}
