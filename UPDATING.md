@@ -24,6 +24,10 @@ assists people when migrating to a new version.
 
 ## Next
 
+### Table selector list is capped and reports the true total
+
+The database `/api/v1/database/{id}/tables/` endpoint now caps the number of tables/views returned in `result` at `DATABASE_TABLES_MAX` (default `1000`), while the `count` field continues to report the full total. This lets the SQL Lab / Explore table selector detect truncation and surface a "showing first N tables" notice instead of silently omitting tables. Deployments with schemas larger than the default can raise `DATABASE_TABLES_MAX` in `superset_config.py`.
+
 ### Guest-token RLS rules reject unknown fields
 
 The `rls` rules passed to `POST /api/v1/security/guest_token/` are now validated strictly: a rule may only contain `dataset` and `clause`. Previously unknown fields were silently dropped, so a mistyped or legacy scope key (most commonly `datasource` instead of `dataset`) produced a rule with no `dataset`, which is treated as a *global* rule applied to every dataset the embedded resource can reach. Such a request now returns HTTP 400 identifying the offending field instead of issuing a token with an unintended global rule. Integrators that were sending extra fields in RLS rules must remove them; valid dataset-scoped (`{"dataset": 41, "clause": "..."}`) and global (`{"clause": "..."}`) rules are unaffected.
